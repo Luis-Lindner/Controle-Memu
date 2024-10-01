@@ -1,0 +1,22 @@
+{
+  "name": "teste",
+  "version": "1.0.0",
+  "description": "teste",
+  "main": "ControleMemu.js",
+  "scripts": {
+    "start": "node ControleMemu.js",
+    "test": "npm i"
+  },
+  "repository": {
+    "type": "git",
+    "url": "123"
+  },
+  "keywords": [
+    "123"
+  ],
+  "author": "gsavo",
+  "license": "MIT",
+  "dependencies": {
+    "ps-node": "^0.1.6"
+  }
+}
