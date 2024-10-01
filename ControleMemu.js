@@ -1,4 +1,4 @@
-const fs = require('fs').promises; // Usar a versão promissora do fs
+const fs = require('fs').promises;
 const path = require('path');
 const { exec } = require('child_process');
 
@@ -17,8 +17,10 @@ function openApp(appPath) {
 
 function closeApp(appPath) {
     return new Promise((resolve, reject) => {
-        const appName = path.basename(appPath);
-        exec(`taskkill /IM "${appName}" /F`, (error, stdout, stderr) => {
+        const appName = path.basename(appPath, '.exe');
+        console.log(`Tentando fechar: ${appName}.exe`);
+
+        exec(`taskkill /IM "${appName}.exe" /F`, (error, stdout, stderr) => {
             if (error) {
                 console.error(`Erro ao fechar o app: ${error.message}`);
                 return reject(error);
