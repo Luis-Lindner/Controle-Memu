@@ -17,6 +17,7 @@
   "author": "gsavo",
   "license": "MIT",
   "dependencies": {
-    "ps-node": "^0.1.6"
+    "ps-node": "^0.1.6",
+    "windows-shortcuts": "^0.1.6"
   }
 }

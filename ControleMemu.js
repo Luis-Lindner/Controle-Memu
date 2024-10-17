@@ -1,50 +1,106 @@
+const { exec, spawn } = require('child_process'); // Adicionando a importação de exec
 const fs = require('fs').promises;
 const path = require('path');
-const { exec } = require('child_process');
+const shortcut = require('windows-shortcuts');
 
 function openApp(appPath) {
+    console.log(`Iniciando a abertura do aplicativo: ${appPath}`);
+
+    if (!appPath) {
+        return Promise.reject(new Error('Caminho do aplicativo não fornecido.'));
+    }
+
     return new Promise((resolve, reject) => {
-        exec(`start "" "${appPath}"`, (error) => {
+        const process = spawn(appPath, [], { detached: true, stdio: 'ignore' });
+
+        process.on('error', (error) => {
+            console.error(`Erro ao abrir o aplicativo: ${error.message}`);
+            reject(error);
+        });
+
+        process.unref();
+        console.log(`Aplicativo aberto com sucesso: ${appPath}`);
+        resolve();
+    });
+}
+
+function closeApp(realAppPath) {
+    console.log(`Tentando fechar o aplicativo: ${realAppPath}`);
+    const appName = path.basename(realAppPath, '.exe');
+
+    return new Promise((resolve, reject) => {
+        exec('tasklist', (error, stdout, stderr) => {
             if (error) {
-                console.error(`Erro ao abrir o aplicativo: ${error.message}`);
                 return reject(error);
             }
-            console.log(`Aplicativo aberto: ${appPath}`);
-            resolve();
+
+            console.log(`Lista de processos:\n${stdout}`);
+
+            const regex = new RegExp(`${appName}`, 'i');
+            const matchedProcess = stdout.match(regex);
+
+            if (matchedProcess) {
+                console.log(`Processo encontrado, fechando: ${appName}.exe`);
+                exec(`taskkill /IM "${appName}.exe" /F`, (killError, killStdout, killStderr) => {
+                    if (killError) {
+                        return reject(killError);
+                    }
+                    console.log(`Aplicativo fechado com sucesso: ${killStdout}`);
+                    resolve();
+                });
+            } else {
+                console.log(`Processo ${appName}.exe não encontrado.`);
+                resolve();
+            }
         });
     });
 }
 
-function closeApp(appPath) {
-    return new Promise((resolve, reject) => {
-        const appName = path.basename(appPath, '.exe');
-        console.log(`Tentando fechar: ${appName}.exe`);
+async function resolveShortcut(appPath) {
+    console.log(`Verificando se o arquivo é um atalho: ${appPath}`);
 
-        exec(`taskkill /IM "${appName}.exe" /F`, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`Erro ao fechar o app: ${error.message}`);
-                return reject(error);
-            }
-            if (stderr) {
-                console.error(`Erro: ${stderr}`);
-                return reject(new Error(stderr));
-            }
-            console.log(`App fechado: ${stdout}`);
-            resolve();
-        });
+    return new Promise((resolve, reject) => {
+        if (appPath.endsWith('.lnk')) {
+            shortcut.query(appPath, (err, result) => {
+                if (err) {
+                    return reject(err);
+                }
+                if (result && result.target) {
+                    resolve(result.target);
+                } else {
+                    return reject(new Error('Caminho do atalho inválido.'));
+                }
+            });
+        } else {
+            resolve(appPath);
+        }
     });
 }
 
 async function runAllExecutablesInFolder(folderPath) {
+    console.log(`Lendo o conteúdo da pasta: ${folderPath}`);
+
     try {
         const files = await fs.readdir(folderPath);
-        const exeFiles = files.filter(file => file.endsWith('.exe'));
+        const exeFiles = files.filter(file => file.endsWith('.exe') || file.endsWith('.lnk'));
 
         for (const file of exeFiles) {
             const appPath = path.join(folderPath, file);
-            await openApp(appPath);
-            await new Promise(resolve => setTimeout(resolve, 10000));
-            await closeApp(appPath);
+            const realAppPath = await resolveShortcut(appPath);
+
+            try {
+                await openApp(realAppPath);
+                console.log(`Esperando 5 segundos antes de fechar o aplicativo.`);
+                await new Promise(resolve => setTimeout(resolve, 30000));
+            } catch (err) {
+                console.error(`Erro ao abrir o aplicativo: ${err.message}`);
+                continue;
+            }
+
+            console.log(`Tentando fechar o processo do executável real.`);
+            await closeApp(realAppPath);
+
+            console.log(`Aplicativo ${file} processado com sucesso.`);
         }
 
         console.log('Todos os aplicativos foram processados.');
@@ -53,5 +109,5 @@ async function runAllExecutablesInFolder(folderPath) {
     }
 }
 
-const folderPath = "C:\\Users\\gs4vo\\AppData\\Local\\Postman";
+const folderPath = "C:/Users/SDR Naty/Desktop/testeAbrirMemu";
 runAllExecutablesInFolder(folderPath);
