@@ -1,8 +1,9 @@
-const { exec, spawn } = require('child_process'); // Adicionando a importação de exec
+const { exec, spawn } = require('child_process');
 const fs = require('fs').promises;
 const path = require('path');
 const shortcut = require('windows-shortcuts');
-
+let count = true;
+    
 function openApp(appPath) {
     console.log(`Iniciando a abertura do aplicativo: ${appPath}`);
 
@@ -79,7 +80,7 @@ async function resolveShortcut(appPath) {
 
 async function runAllExecutablesInFolder(folderPath) {
     console.log(`Lendo o conteúdo da pasta: ${folderPath}`);
-
+do{
     try {
         const files = await fs.readdir(folderPath);
         const exeFiles = files.filter(file => file.endsWith('.exe') || file.endsWith('.lnk'));
@@ -91,7 +92,7 @@ async function runAllExecutablesInFolder(folderPath) {
             try {
                 await openApp(realAppPath);
                 console.log(`Esperando 5 segundos antes de fechar o aplicativo.`);
-                await new Promise(resolve => setTimeout(resolve, 30000));
+                await new Promise(resolve => setTimeout(resolve, 5000));
             } catch (err) {
                 console.error(`Erro ao abrir o aplicativo: ${err.message}`);
                 continue;
@@ -107,6 +108,11 @@ async function runAllExecutablesInFolder(folderPath) {
     } catch (err) {
         console.error(`Erro ao processar a pasta: ${err.message}`);
     }
+    console.log("Aguardando 20 segundos para iniciar o código novamente");
+    await new Promise(resolve => setTimeout(resolve,20000));
+
+}while(count = true)
+
 }
 
 const folderPath = "C:/Users/SDR Naty/Desktop/testeAbrirMemu";
